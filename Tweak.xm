@@ -17,17 +17,22 @@ CFTypeRef hooked_SecTaskCopyValueForEntitlement(void *task,
     @"com.apple.webinspector.allow",
     @"com.apple.private.webinspector.allow-remote-inspection",
     @"com.apple.private.webinspector.allow-carrier-remote-inspection",
-    @"com.apple.private.webinspector.proxy-application"
   ];
   NSString *casted = (__bridge NSString *)entitlement;
   NSString *identifier =
       (__bridge NSString *)SecTaskCopySigningIdentifier(task, NULL);
   NSLog(@TAG "check entitlement: %@ for %@", casted, identifier);
-  if ([expected containsObject:casted]) return kCFBooleanTrue;
+  if ([expected containsObject:casted]) {
+    NSLog(@"set allow %@", identifier);
+    return kCFBooleanTrue;
+  }
   return original_SecTaskCopyValueForEntitlement(task, entitlement, error);
 }
 
 %ctor {
+  if (strcmp(getprogname(), "webinspectord") != 0)
+    return;
+
   MSImageRef image = MSGetImageByName(
       "/System/Library/Frameworks/Security.framework/Security");
   if (!image) {
