@@ -1,1 +1,1 @@
-{ Filter = { Executables = ( "webinspectord" ); }; }
+{ Filter = { Bundles = ( "com.apple.security", "com.apple.Security" ); }; }
