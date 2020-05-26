@@ -1,6 +1,6 @@
 #include <substrate.h>
 
-#define TAG "[Tweak] "
+#define LOG(fmt, ...) NSLog(@"[WebInspect] " fmt "\n", ##__VA_ARGS__)
 
 typedef CFStringRef(sec_task_copy_id_t)(void *task,
                                         CFErrorRef _Nullable *error);
@@ -21,22 +21,20 @@ CFTypeRef hooked_SecTaskCopyValueForEntitlement(void *task,
   NSString *casted = (__bridge NSString *)entitlement;
   NSString *identifier =
       (__bridge NSString *)SecTaskCopySigningIdentifier(task, NULL);
-  NSLog(@TAG "check entitlement: %@ for %@", casted, identifier);
+  LOG("check entitlement: %@ for %@", casted, identifier);
   if ([expected containsObject:casted]) {
-    NSLog(@"set allow %@", identifier);
+    LOG("allow %@", identifier);
     return kCFBooleanTrue;
   }
   return original_SecTaskCopyValueForEntitlement(task, entitlement, error);
 }
 
 %ctor {
-  if (strcmp(getprogname(), "webinspectord") != 0)
-    return;
-
+  LOG(@"loaded in %s (%d)", getprogname(), getpid());
   MSImageRef image = MSGetImageByName(
       "/System/Library/Frameworks/Security.framework/Security");
   if (!image) {
-    NSLog(@TAG @"Security framework not found, it is impossible");
+    LOG("Security framework not found, it is impossible");
     return;
   }
   SecTaskCopySigningIdentifier = (sec_task_copy_id_t *)MSFindSymbol(

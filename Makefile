@@ -9,5 +9,5 @@ webinspect_LDFLAGS = -stdlib=libc++
 include $(THEOS_MAKE_PATH)/tweak.mk
 
 after-install::
-	install.exec "launchctl stop com.apple.webinspectord; launchctl start com.apple.webinspectord"
-	echo "you need to re-plug the USB wire and kill the target App to make it work"
+	install.exec "launchctl stop com.apple.webinspectord"
+	echo you need to kill the target App and restart Safari to make it work
