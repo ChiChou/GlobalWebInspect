@@ -1,13 +1,10 @@
 include $(THEOS)/makefiles/common.mk
 
 TWEAK_NAME = webinspect
-webinspect_FILES = Tweak.xm
-
-webinspect_CFLAGS = -std=c++11 -stdlib=libc++
-webinspect_LDFLAGS = -stdlib=libc++
+webinspect_FILES = Tweak.x
 
 include $(THEOS_MAKE_PATH)/tweak.mk
 
 after-install::
-	install.exec "launchctl stop com.apple.webinspectord"
+	install.exec "launchctl kickstart -k -p system/com.apple.webinspectord"
 	echo you need to kill the target App and restart Safari to make it work

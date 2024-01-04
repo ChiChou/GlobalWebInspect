@@ -1,5 +1,6 @@
 #include <substrate.h>
 #import <Foundation/Foundation.h>
+#include <dlfcn.h>
 
 #define LOG(fmt, ...) NSLog(@"[WebInspect] " fmt "\n", ##__VA_ARGS__)
 
@@ -38,7 +39,7 @@ CFTypeRef hooked_SecTaskCopyValueForEntitlement(void *task, CFStringRef entitlem
     LOG("Security framework not found, it is impossible");
     return;
   }
-  SecTaskCopySigningIdentifier = (sec_task_copy_id_t *)MSFindSymbol(image, "_SecTaskCopySigningIdentifier");
+  SecTaskCopySigningIdentifier = (sec_task_copy_id_t *)dlsym(RTLD_DEFAULT, "SecTaskCopySigningIdentifier");
   MSHookFunction(
     MSFindSymbol(image, "_SecTaskCopyValueForEntitlement"),
     (void *)hooked_SecTaskCopyValueForEntitlement,
