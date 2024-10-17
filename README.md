@@ -2,13 +2,33 @@
 
 Enable WebView inspector for all iOS apps, requires jailbreak
 
-## Important note after Safari 16.4
+## Technical Details
 
-From Safari 16.4, the webinspector works differently. This tweak does not apply to such versions.
+For iOS >= 16.4, WebKit let the app to decide whether to enable WebInspector or not.
+
 https://webkit.org/blog/13936/enabling-the-inspection-of-web-content-in-apps/
+
+For older systems, `webinspectord` validates entitlements for each process that has `JSContext` or `WKWebView`.
+
+If any of the following is found, the process will be added to inspector list:
+
+* com.apple.security.get-task-allow
+* com.apple.webinspector.allow
+* com.apple.private.webinspector.allow-remote-inspection
+* com.apple.private.webinspector.allow-carrier-remote-inspection
+
+## Build
+
+Assume you already have iproxy and ssh configured
+
+```bash
+export ROOTLESS=1  # if built for rootless jailbreak
+make package
+THEOS_DEVICE_IP=localhost THEOS_DEVICE_PORT=2222 make install
+```
 
 ## Usage
 
 * Enable WebInspector in Preferences
-* Build and install the tweak `THEOS_DEVICE_IP=localhost THEOS_DEVICE_PORT=2222 make package install`
+* Build and install the tweak
 * Re-plug the USB cable and restart target app
