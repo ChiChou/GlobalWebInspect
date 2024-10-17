@@ -1,28 +1,33 @@
 #include <substrate.h>
-#import <Foundation/Foundation.h>
-#import <JavaScriptCore/JavaScriptCore.h>
-#import <WebKit/WebKit.h>
-#import <Security/Security.h>
-#include <dlfcn.h>
+#include <Foundation/Foundation.h>
 
 #define LOG(fmt, ...) NSLog(@"[WebInspect] " fmt "\n", ##__VA_ARGS__)
 
+#pragma mark - Prototypes
+__attribute__((constructor)) void initialization(void);
 void hook_webinspectord(void);
 void hook_jsc(void);
 
+#pragma mark - Security framework hooks
+
 typedef struct CF_BRIDGED_TYPE(id) __SecTask *SecTaskRef;
 __nullable CFStringRef SecTaskCopySigningIdentifier(SecTaskRef task, CFErrorRef *error);
-
-JSGlobalContextRef hooked_JSGlobalContextCreateInGroup(JSContextGroupRef group, JSClassRef globalObjectClass);
-
-// dynamically resolved symbols
-typedef void (jsc_set_inspectable_t)(JSGlobalContextRef ctx, bool inspectable);
-jsc_set_inspectable_t *jsc_set_inspectable = NULL;
-
-CFTypeRef (*original_SecTaskCopyValueForEntitlement)(SecTaskRef task, CFStringRef entitlement, CFErrorRef _Nullable *error);
-
 CFTypeRef hooked_SecTaskCopyValueForEntitlement(SecTaskRef task, CFStringRef entitlement, CFErrorRef _Nullable *error);
 
+#pragma mark - JavaScriptCore framework hooks
+
+typedef const void* JSContextGroupRef;
+typedef const void* JSGlobalContextRef;
+typedef const void* JSClassRef;
+
+JSGlobalContextRef hooked_JSGlobalContextCreateInGroup(JSContextGroupRef group, JSClassRef globalObjectClass);
+typedef void (jsc_set_inspectable_t)(JSGlobalContextRef ctx, bool inspectable);
+jsc_set_inspectable_t *jsc_set_inspectable = NULL;
+void hooked_webview_initWithConf(id self, SEL sel, id conf);
+
+#pragma mark - Security framework hook implementation
+
+CFTypeRef (*original_SecTaskCopyValueForEntitlement)(SecTaskRef task, CFStringRef entitlement, CFErrorRef _Nullable *error);
 CFTypeRef hooked_SecTaskCopyValueForEntitlement(SecTaskRef task, CFStringRef entitlement, CFErrorRef _Nullable *error) {
   static CFSetRef set = NULL;
   static dispatch_once_t onceToken;
@@ -46,17 +51,6 @@ CFTypeRef hooked_SecTaskCopyValueForEntitlement(SecTaskRef task, CFStringRef ent
   return original_SecTaskCopyValueForEntitlement(task, entitlement, error);
 }
 
-%ctor {
-  const char *name = getprogname();
-  LOG(@"loaded in %s (%d)", name, getpid());
-
-  if (strcmp(name, "webinspectord") == 0) {
-    hook_webinspectord();
-  } else {
-    hook_jsc();
-  }
-}
-
 void hook_webinspectord() {
   MSImageRef security = MSGetImageByName("/System/Library/Frameworks/Security.framework/Security");
   if (!security) {
@@ -71,8 +65,9 @@ void hook_webinspectord() {
   );
 }
 
-JSGlobalContextRef (*original_JSGlobalContextCreateInGroup)(JSContextGroupRef group, JSClassRef globalObjectClass);
+#pragma mark - JavaScriptCore and WebKit hook implementation
 
+JSGlobalContextRef (*original_JSGlobalContextCreateInGroup)(JSContextGroupRef group, JSClassRef globalObjectClass);
 JSGlobalContextRef hooked_JSGlobalContextCreateInGroup(JSContextGroupRef group, JSClassRef globalObjectClass) {
   JSGlobalContextRef ctx = original_JSGlobalContextCreateInGroup(group, globalObjectClass);
   if (!ctx) return NULL;
@@ -92,9 +87,8 @@ JSContext *hooked_JSC_initWithVM(JSContext *self, SEL sel, JSVirtualMachine *vm)
 }
 #endif
 
-void (*original_webview_initWithConf)(id self, SEL sel, WKWebViewConfiguration *conf);
-
-void hooked_webview_initWithConf(id self, SEL sel, WKWebViewConfiguration *conf) {
+void (*original_webview_initWithConf)(id self, SEL sel, id conf);
+void hooked_webview_initWithConf(id self, SEL sel, id conf) {
   original_webview_initWithConf(self, sel, conf);
   LOG("set inspectable for %@ (WKWebView _initializeWithConfiguration:)", self);
   // the correct type shoule be bool YES. However any non-zero value works
@@ -144,4 +138,17 @@ void hook_jsc() {
   );
 #endif
 
+}
+
+#pragma mark - Entry
+
+void initialization() {
+  const char *name = getprogname();
+  LOG(@"loaded in %s (%d)", name, getpid());
+
+  if (strcmp(name, "webinspectord") == 0) {
+    hook_webinspectord();
+  } else {
+    hook_jsc();
+  }
 }
