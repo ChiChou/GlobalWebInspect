@@ -1,5 +1,7 @@
 # GlobalWebinspect
 
+[中文说明](README_cn.md)
+
 Enable WebView inspector for all iOS apps, requires jailbreak
 
 [ElleKit](https://ellekit.space/) is required to install the tweak.
