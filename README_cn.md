@@ -39,4 +39,4 @@ THEOS_DEVICE_IP=localhost THEOS_DEVICE_PORT=2222 make install
 
 ## 链接
 
-[微信公众号](http://weixin.qq.com/r/SRCVjc3E4JCfrYnu90Vb)
+![wechat.webp](wechat.webp)
