@@ -16,6 +16,7 @@ endif # ROOTLESS / ROOTHIDE
 include $(THEOS)/makefiles/common.mk
 
 TARGET = iphone:latest:14.0
+ARCHS = arm64 arm64e
 
 TWEAK_NAME = webinspect
 webinspect_FILES = Tweak.m
